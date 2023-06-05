@@ -16,7 +16,7 @@ class mongodb::globals (
   $ipv6                  = undef,
   $bind_ip               = undef,
 
-  $version               = '4.4', # Minimal
+  $version               = 6.0,
   $manage_package_repo   = fact('os.distro.codename') ? { # Debian 10 doesn't provide mongodb packages. So manage it!
     'buster' => true,
     default  => undef

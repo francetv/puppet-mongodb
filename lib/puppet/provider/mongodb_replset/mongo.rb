@@ -73,6 +73,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def rs_initiate(conf, master)
+    Puppet.debug("in rs_initiate with conf is #{conf} and master is #{master} and auth_enabled is #{auth_enabled}")
     if auth_enabled && auth_enabled != 'disabled'
       mongo_command("rs.initiate(#{conf})", initialize_host)
     else
@@ -81,10 +82,12 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def rs_status(host)
+    Puppet.debug("in rs_status with host is #{host}")
     mongo_command('rs.status()', host)
   end
 
   def rs_config(host)
+    Puppet.debug("in rs_config with host is #{host}")
     mongo_command('rs.config()', host)
   end
 
@@ -114,6 +117,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def auth_enabled
+    Puppet.debug('in auth_enabled')
     self.class.auth_enabled
   end
 
@@ -122,6 +126,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def master_host(members)
+    Puppet.debug("in master_host with memebers is #{members}")
     members.each do |member|
       status = db_ismaster(member['host'])
       return status['primary'] if status.key?('primary')

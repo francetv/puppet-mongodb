@@ -161,7 +161,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       status = rs_status(host)
       raise Puppet::Error, "Can't configure replicaset #{name}, host #{host} is not supposed to be part of a replicaset." if status.key?('errmsg') && status['errmsg'] == 'not running with --replSet'
 
-      if auth_enabled && status.key?('errmsg') && (status['errmsg'].include?('requires authentication') || status['errmsg'].include?('requires authentication') || status['errmsg'].include?('requires authentication'))
+      if auth_enabled && status.key?('errmsg') && (status['errmsg'].include?('requires authentication') || status['errmsg'].include?('not authorized on admin') || status['errmsg'].include?('requires authentication'))
         Puppet.warning "Host #{host} is available, but you are unauthorized because of authentication is enabled: #{auth_enabled}"
         alive.push(member)
       end
@@ -388,7 +388,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
   def self.mongo_command(command, host = nil, retries = 4)
     begin
-      output = mongo_eval("printjson(#{command})", 'admin', retries, host)
+      output = mongo_eval("EJSON.stringify(#{command})", 'admin', retries, host)
     rescue Puppet::ExecutionFailure => e
       Puppet.debug "Got an exception: #{e}"
       raise

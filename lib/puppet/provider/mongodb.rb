@@ -5,6 +5,7 @@ require 'puppet/util/mongodb_output'
 
 require 'yaml'
 require 'json'
+
 class Puppet::Provider::Mongodb < Puppet::Provider
   # Without initvars commands won't work.
   initvars
@@ -28,8 +29,12 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     end
   end
 
+  def self.mongosh_config
+    File.join(Facter.value(:root_home), '.mongosh.yaml')
+  end
+
   def self.mongo_conf
-    mongosh_config = YAML.load_file('/root/.mongosh.yaml') || {}
+    mongosh_config = YAML.load_file(mongosh_config) || {}
     config = YAML.load_file(mongod_conf_file) || {}
     # determine if we need the tls for connecion or client
     _tlscert = if config['setParameter'] && config['setParameter']['authenticationMechanisms'] == 'MONGODB-X509'

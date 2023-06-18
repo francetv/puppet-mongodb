@@ -71,7 +71,7 @@ describe 'mongodb::server' do
           it { is_expected.to contain_file(config_file).with_content(%r{^  fork: true$}) }
         end
 
-        it { is_expected.to contain_file('/root/.mongorc.js').with_ensure('file').without_content(%r{db\.auth}) }
+        it { is_expected.to contain_file('/root/.mongoshrc.js').with_ensure('file').without_content(%r{db\.auth}) }
         it { is_expected.not_to contain_exec('fix dbpath permissions') }
       end
 
@@ -165,7 +165,7 @@ describe 'mongodb::server' do
         end
 
         it { is_expected.to contain_file(config_file).with_content(%r{^security\.authorization: enabled$}) }
-        it { is_expected.to contain_file('/root/.mongorc.js') }
+        it { is_expected.to contain_file('/root/.mongoshrc.js') }
       end
 
       describe 'when specifying set_parameter array value' do
@@ -262,7 +262,7 @@ describe 'mongodb::server' do
           end
 
           it {
-            is_expected.to contain_file('/root/.mongorc.js').
+            is_expected.to contain_file('/root/.mongoshrc.js').
               with_ensure('file').
               with_owner('root').
               with_group('root').
@@ -278,7 +278,7 @@ describe 'mongodb::server' do
             }
           end
 
-          it { is_expected.to contain_file('/root/.mongorc.js').with_ensure('file').without_content(%r{db\.auth}) }
+          it { is_expected.to contain_file('/root/.mongoshrc.js').with_ensure('file').without_content(%r{db\.auth}) }
         end
       end
 

@@ -30,11 +30,10 @@ describe Puppet::Type.type(:mongodb_user).provider(:mongodb) do
 
   before do
     tmp = Tempfile.new('test')
-    mongod_conf_file = tmp.path
-    allow(provider.class).to receive(:mongod_conf_file).and_return(mongod_conf_file)
-    tmp = Tempfile.new('test')
-    mongosh_config = tmp.path
-    allow(provider.class).to receive(:mongosh_config).and_return(mongosh_config)
+    mongosh_config_path = tmp.path
+    mongod_conf_file_path = tmp.path
+    allow(provider.class).to receive(:mongod_conf_file_path).and_return(mongod_conf_file_path)
+    allow(provider.class).to receive(:mongosh_config_path).and_return(mongod_conf_file_path)
     allow(provider.class).to receive(:mongo_eval).with('printjson(db.system.users.find().toArray())').and_return(raw_users)
     allow(provider.class).to receive(:mongo_version).and_return('2.6.x')
     allow(provider.class).to receive(:db_ismaster).and_return(true)
@@ -55,7 +54,7 @@ describe Puppet::Type.type(:mongodb_user).provider(:mongodb) do
   end
 
   describe 'create' do
-    it 'creates a user' do
+    it 'create a user' do
       cmd_json = <<-EOS.gsub(%r{^\s*}, '').gsub(%r{$\n}, '')
       {
         "createUser":"new_user",

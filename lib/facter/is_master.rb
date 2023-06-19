@@ -2,6 +2,7 @@
 
 require 'json'
 require 'yaml'
+require 'pry'
 
 def mongod_conf_file
   locations = ['/etc/mongod.conf', '/etc/mongodb.conf']
@@ -9,7 +10,7 @@ def mongod_conf_file
 end
 
 def mongosh_conf_file
-  '/root/.mongosh.yaml' if File.exist?('/root/mongosh.yaml')
+  '/root/.mongosh.yaml' if File.exist?('/root/.mongosh.yaml')
 end
 
 def get_options_from_hash_config(config)
@@ -96,19 +97,23 @@ end
 Facter.add('mongodb_is_master') do
   setcode do
     if %w[mongo mongod].all? { |m| Facter::Util::Resolution.which m }
-      # if we have a mongod_conf_file we use mongosh, else stick to mongo
-      # this will only work for < 6.x versions
       file = mongod_conf_file
       if file
         options = get_options_from_config(file)
-        e = File.exist?('/root/.mongoshrc.js') ? 'load(\'/root/.mongoshrc.js\'); ' : ''
+        if mongosh_conf_file
+          e = File.exist?('/root/.mongoshrc.js') ? 'load(\'/root/.mongoshrc.js\'); ' : ''
+          command = 'mongosh'
+        else
+          e = File.exist?('/root/.mongorc.js') ? 'load(\'/root/.mongorc.js\'); ' : ''
+          command = 'mongo'
+        end
 
         # Check if the mongodb server is responding:
-        Facter::Core::Execution.exec("mongosh --quiet #{options} --eval \"#{e}printjson(db.adminCommand({ ping: 1 }))\"")
+        Facter::Core::Execution.exec("#{command} --quiet #{options} --eval \"#{e}printjson(db.adminCommand({ ping: 1 }))\"")
 
         if $CHILD_STATUS.success?
           # TODO: need to catch errors like 'Error: Authentication failed.' ?
-          Facter::Core::Execution.exec("mongosh --quiet #{options} --eval \"#{e}db.isMaster().ismaster\"")
+          Facter::Core::Execution.exec("#{command} --quiet #{options} --eval \"#{e}db.isMaster().ismaster\"")
         else
           'not_responding'
         end

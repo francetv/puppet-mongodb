@@ -10,18 +10,25 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   # Without initvars commands won't work.
   initvars
   # TODO: do we still need to support mongo ? Since it is removed from 6.x, not in this PR
-  commands mongo: 'mongosh'
-
+  commands mongo: if Facter::Core::Execution.which('mongosh')
+                    'mongosh'
+                  elsif Facter::Core::Execution.which('mongo')
+                    'mongo'
+                  end
   # Optional defaults file
   def self.mongorc_file
-    "load('#{Facter.value(:root_home)}/.mongoshrc.js'); " if File.file?("#{Facter.value(:root_home)}/.mongoshrc.js")
+    if File.file?("#{Facter.value(:root_home)}/.mongoshrc.js")
+      "load('#{Facter.value(:root_home)}/.mongoshrc.js'); "
+    else
+      "load('#{Facter.value(:root_home)}/.mongorc.js'); "
+    end
   end
 
   def mongorc_file
     self.class.mongorc_file
   end
 
-  def self.mongod_conf_file
+  def self.mongod_conf_file_path
     if File.exist? '/etc/mongod.conf'
       '/etc/mongod.conf'
     else
@@ -29,13 +36,13 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     end
   end
 
-  def self.mongosh_config
+  def self.mongosh_config_path
     File.join(Facter.value(:root_home), '.mongosh.yaml')
   end
 
   def self.mongo_conf
-    mongosh_config = YAML.load_file(mongosh_config) || {}
-    config = YAML.load_file(mongod_conf_file) || {}
+    mongosh_config = YAML.load_file(self.mongosh_config_path) || {}
+    config = YAML.load_file(self.mongod_conf_file_path) || {}
     # determine if we need the tls for connecion or client
     _tlscert = if config['setParameter'] && config['setParameter']['authenticationMechanisms'] == 'MONGODB-X509'
                  if mongosh_config['admin'] && mongosh_config['admin']['tlsCertificateKeyFile']
@@ -208,7 +215,7 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     self.class.mongo_version
   end
 
-  # TODO: moingosh only from 4.2 bersion ?, so do we remove this?
+  # TODO: mongosh only from 4.2 version ?, so do we remove this?
   def self.mongo_26?
     v = mongo_version
     !v[%r{^2\.6\.}].nil?
@@ -242,6 +249,15 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   end
 
   def mongo_6?
+    self.class.mongo_6?
+  end
+
+  def self.mongo_7?
+    v = mongo_version
+    !v[%r{^7\.}].nil?
+  end
+
+  def mongo_7?
     self.class.mongo_6?
   end
 end

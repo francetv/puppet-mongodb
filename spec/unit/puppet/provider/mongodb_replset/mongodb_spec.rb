@@ -25,13 +25,10 @@ describe Puppet::Type.type(:mongodb_replset).provider(:mongo) do
   let(:provider) { described_class.new(resource) }
 
   describe '#create' do
-    before do
+    before :each do
       tmp = Tempfile.new('test')
-      mongod_conf_file = tmp.path
-      allow(provider.class).to receive(:mongod_conf_file).and_return(mongod_conf_file)
-      tmp = Tempfile.new('test')
-      mongosh_config = tmp.path
-      allow(provider.class).to receive(:mongosh_config).and_return(mongosh_config)
+      mongod_conf_file_path = tmp.path
+      allow(provider.class).to receive(:mongod_conf_file_path).and_return(mongod_conf_file_path)
       allow(provider.class).to receive(:mongo).and_return(<<~EOT)
         {
                 "ismaster" : false,
@@ -62,8 +59,8 @@ describe Puppet::Type.type(:mongodb_replset).provider(:mongo) do
   describe '#exists?' do
     before do
       tmp = Tempfile.new('test')
-      mongodconffile = tmp.path
-      allow(provider.class).to receive(:mongod_conf_file).and_return(mongodconffile)
+      mongod_conf_file_path = tmp.path
+      allow(provider.class).to receive(:mongod_conf_file_path).and_return(mongod_conf_file_path)
     end
 
     describe 'when the replicaset does not exist' do
@@ -99,8 +96,8 @@ describe Puppet::Type.type(:mongodb_replset).provider(:mongo) do
   describe '#members' do
     before do
       tmp = Tempfile.new('test')
-      mongodconffile = tmp.path
-      allow(provider.class).to receive(:mongod_conf_file).and_return(mongodconffile)
+      mongod_conf_file_path = tmp.path
+      allow(provider.class).to receive(:mongod_conf_file_path).and_return(mongod_conf_file_path)
     end
 
     it 'returns the members of a configured replicaset' do
@@ -132,8 +129,10 @@ describe Puppet::Type.type(:mongodb_replset).provider(:mongo) do
   describe 'members=' do
     before do
       tmp = Tempfile.new('test')
-      mongodconffile = tmp.path
-      allow(provider.class).to receive(:mongod_conf_file).and_return(mongodconffile)
+      mongosh_config_path = tmp.path
+      mongod_conf_file_path = tmp.path
+      allow(provider.class).to receive(:mongod_conf_file_path).and_return(mongod_conf_file_path)
+      allow(provider.class).to receive(:mongosh_config_path).and_return(mongod_conf_file_path)
       allow(provider.class).to receive(:mongo_eval).and_return(<<~EOT)
         {
         	"setName" : "rs_test",

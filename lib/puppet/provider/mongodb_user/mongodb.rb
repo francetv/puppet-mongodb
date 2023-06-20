@@ -55,6 +55,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   mk_resource_methods
 
   def create
+    Puppet.debug("In mongodb_user.create. Only works when on the primery node")
     if db_ismaster
       password_hash = @resource[:password_hash]
       password_hash = Puppet::Util::MongodbMd5er.md5(@resource[:username], @resource[:password]) if !password_hash && @resource[:password]
@@ -83,6 +84,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
         command[:digestPassword] = false
       end
 
+      Puppet.debug("In mongodb_user.create. executing db.runCommand(#{command.to_json}), on #{@resource[:database]}")
       mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
     else
       Puppet.warning 'User creation is available only from master host'

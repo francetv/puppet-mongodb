@@ -75,6 +75,7 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   end
 
   def self.mongosh_cmd(db, host, cmd)
+    Puppet.debug("MONGODB: in self.mongosh_cmd")
     config = mongo_conf
 
     args = [db, '--quiet', '--host', host]
@@ -101,7 +102,10 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     end
 
     args += ['--eval', cmd]
-    mongosh(args)
+    Puppet.debug("MONGODB: in self.mongosh_cmd executing with args #{args}")
+    out = mongosh(args)
+    Puppet.debug("MONGODB: in self.mongosh_cmd results in #{out}")
+    out
   end
 
   def self.conn_string
@@ -140,6 +144,14 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     cmd_ismaster = mongoshrc_file + cmd_ismaster if mongoshrc_file
     db = 'admin'
     res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
+
+    # Retry command without authentication when mongorc_file is set and authentication failed
+    if mongorc_file && res =~ %r{Authentication failed}
+      res = mongosh_cmd(db, conn_string, 'db.isMaster().ismaster').to_s.chomp
+    end
+
+    Puppet.debug("In self.db_is_master with res is #{res}")
+
     res.eql?('true')
   end
 
@@ -153,29 +165,65 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     config['auth'] && config['auth'] != 'disabled'
   end
 
+  def self.rs_initiated?
+    cmd_status = "rs.status('localhost').set"
+    cmd_status = mongoshrc_file + cmd_status if mongoshrc_file
+    db = 'admin'
+    res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
+    Puppet.debug("MONGODB: In self.rs_initiated? with res is #{res}")
+
+    # Retry command without authentication when mongorc_file is set and authentication failed
+    if mongorc_file && res =~ %r{Authentication failed}
+      res = mongosh_cmd(db, conn_string, "rs.status('localhost').set").to_s.chomp
+    end
+    Puppet.debug("MONGODB: In self.rs_initiated? without auth res is #{res}")
+
+    res == @resource[:name]
+  end
+
+  def rs_initiated?
+    self.rs_initiated?
+  end
+
   # Mongo Command Wrapper
   def self.mongo_eval(cmd, db = 'admin', retries = 10, host = nil)
+    Puppet.debug("MONGODB: in self.mongo_eval with cmd is #{cmd}")
     retry_count = retries
     retry_sleep = 3
+    no_auth_cmd = cmd
     cmd = mongoshrc_file + cmd if mongoshrc_file
 
     out = nil
     begin
+      Puppet.debug("MONGODB: in self.mongo_eval in BEGIN")
       out = if host
               mongosh_cmd(db, host, cmd)
             else
               mongosh_cmd(db, conn_string, cmd)
             end
     rescue StandardError => e
-      retry_count -= 1
-      if retry_count.positive?
-        Puppet.debug "Request failed: '#{e.message}' Retry: '#{retries - retry_count}'"
-        sleep retry_sleep
-        retry
+      Puppet.debug("MONGODB: in self.mongo_eval rescue with error is #{e}")
+      # When using the rc file, we get this eror because in most cases the admin user is not created yet
+      # Can/must we move this out of the resue block ?
+      if self.auth_enabled && e.message =~ %r{Authentication failed}
+        out = if host
+                mongosh_cmd(db, host, no_auth_cmd)
+              else
+                mongosh_cmd(db, conn_string, no_auth_cmd)
+              end
+        Puppet.debug("MONGODB: in self.mongo_eval rescue inside if with out is #{out}")
+      else
+        retry_count -= 1
+        if retry_count.positive?
+          Puppet.debug "Request failed: '#{e.message}' Retry: '#{retries - retry_count}'"
+          sleep retry_sleep
+          retry
+        end
       end
     end
 
-    raise Puppet::ExecutionFailure, "Could not evaluate MongoDB shell command: #{cmd}" unless out
+    # return also the error message, so caller can react on it
+    raise Puppet::ExecutionFailure, "Could not evaluate MongoDB shell command: #{cmd} with #{e.message}" unless out
 
     Puppet::Util::MongodbOutput.sanitize(out)
   end

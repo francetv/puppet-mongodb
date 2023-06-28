@@ -30,10 +30,26 @@ Puppet::Type.type(:mongodb_database).provide(:mongodb, parent: Puppet::Provider:
     end
   end
 
+  def auth_enabled
+    Puppet.debug('MONGODB_DATABASE: in auth_enabled')
+    self.class.auth_enabled
+  end
+
   def create
     if db_ismaster
-      out = mongo_eval('db.dummyData.insert({"created_by_puppet": 1})', @resource[:name])
-      raise "Failed to create DB '#{@resource[:name]}'\n#{out}" if %r{writeError} =~ out
+      begin
+        Puppet.debug("MONGODB_DATABASE: In create")
+        out = mongo_eval('db.dummyData.insertOne({"created_by_puppet": 1})', @resource[:name])
+      rescue StandardError => e
+        Puppet.debug("MONGODB_DATABSE: In create in rescue")
+        if auth_enabled && e.message =~ %r{not authorized on admin to execute commanda} && @resource[:name] == 'admin'
+          Puppet.warning 'Skipping database creation for admin, need admin user first when security is enabled'
+          @property_hash[:ensure] = :present
+          @property_hash[:name] = @resource[:name]
+        else
+          raise "Failed to create DB '#{@resource[:name]}'\n#{out}" if %r{writeError} =~ out
+        end
+      end
     else
       Puppet.warning 'Database creation is available only from master host'
     end

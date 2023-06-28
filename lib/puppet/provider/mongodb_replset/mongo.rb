@@ -289,7 +289,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       return
     end
 
-    Puppet.debug("REPLICASET DEBUG BIG Is replicaset initiated ? #{rs_initiated?}")
+    #Puppet.debug("REPLICASET DEBUG BIG Is replicaset initiated ? #{rs_initiated?}")
     # When no replicaset is initiated yet, and authenticatoin is anabled,
     # mongo_eval still adds the mongorcsh.js.  This gives an 'MongoServerError: Authentication failed.' error.
     # In this stage, we only can connect to localhost, and only rs.status() and rs.initiate() is possible.

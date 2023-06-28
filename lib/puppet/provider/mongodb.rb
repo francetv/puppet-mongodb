@@ -143,15 +143,24 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     cmd_ismaster = 'db.isMaster().ismaster'
     cmd_ismaster = mongoshrc_file + cmd_ismaster if mongoshrc_file
     db = 'admin'
-    res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
 
-    # Retry command without authentication when mongorc_file is set and authentication failed
-    if mongorc_file && res =~ %r{Authentication failed}
-      res = mongosh_cmd(db, conn_string, 'db.isMaster().ismaster').to_s.chomp
+    full_command = if mongoshrc_file
+                     mongoshrc_file + cmd_ismaster
+                   else
+                     cmd_ismaster
+                   end
+    begin
+        Puppet.debug("MONGODB: In self.db_ismaster with cmd #{cmd_ismaster}")
+       res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
+    rescue StandardError => e
+      Puppet.debug("MONGODB: In self.db_ismaster in rescue")
+      if self.auth_enabled && e.message =~ %r{Authentication failed}
+        res = mongosh_cmd(db, conn_string, 'db.isMaster().ismaster').to_s.chomp
+        Puppet.debug("MONGODB: In self.db_ismaster with res is #{res}")
+      end
     end
 
-    Puppet.debug("In self.db_is_master with res is #{res}")
-
+    Puppet.debug("MONGODB: In self.db_is_master with res is #{res}")
     res.eql?('true')
   end
 

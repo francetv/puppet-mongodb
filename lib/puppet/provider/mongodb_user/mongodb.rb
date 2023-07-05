@@ -9,28 +9,15 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   def self.instances
     require 'json'
 
-    Puppet.debug("MONGODB_USER self.instances")
-
     if db_ismaster
       script = 'EJSON.stringify(db.system.users.find().toArray())'
       # A hack to prevent prefetching failures until admin user is created
       script = "try {#{script}} catch (e) { if (e.message.match(/requires authentication/) || e.message.match(/not authorized on admin/)) { 'not authorized on admin' } else {throw e}}" if auth_enabled
 
       out = mongo_eval(script)
-      Puppet.debug("MONGODB_USER Result of out in self.instances: #{out}")
-      Puppet.debug("MONGODB_USER Type of out in self.instances: #{out.class}")
-      Puppet.debug("MONGODB_USER Methods of out in self.instances: #{out.methods}")
-      Puppet.debug("MONGODB_USER String of out in self.instances: #{out.to_s} has type #{out.to_s.class}")
-      Puppet.debug("MONGODB_USER Json of out in self.instances: #{out.to_json} has type #{out.to_s.class}")
-
-
-      Puppet.debug("MONGODB_USER Just before return if auth_enabled and error requires authentication or not authorized on admin")
       return [] if auth_enabled && (out.include?('requires authentication') || out.include?('not authorized on admin'))
-      Puppet.debug("MONGODB_USER after return []")
 
       users = JSON.parse out
-      Puppet.debug("MONGODB_USER Result of users in self.instances: #{users}")
-      Puppet.debug("MONGODB_USER Type of users in self.instances: #{users.class}")
 
       users.map do |user|
         new(name: user['_id'],
@@ -49,7 +36,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
   # Assign prefetched users based on username and database, not on id and name
   def self.prefetch(resources)
-    Puppet.debug("MONGODB_USER self.prefetch")
     users = instances
     resources.each do |name, resource|
       provider = users.find { |user| user.username == resource[:username] && user.database == resource[:database] }
@@ -60,8 +46,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   mk_resource_methods
 
   def create
-    Puppet.debug("MONGODB_USER create")
-    Puppet.debug("In mongodb_user.create. Only works when on the primery node")
     if db_ismaster
       password_hash = @resource[:password_hash]
       password_hash = Puppet::Util::MongodbMd5er.md5(@resource[:username], @resource[:password]) if !password_hash && @resource[:password]
@@ -90,7 +74,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
         command[:digestPassword] = false
       end
 
-      Puppet.debug("In mongodb_user.create. executing db.runCommand(#{command.to_json}), on #{@resource[:database]}")
       mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
     else
       Puppet.warning 'User creation is available only from master host'
@@ -106,17 +89,14 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def destroy
-    Puppet.debug("MONGODB_USER destroy")
     mongo_eval("db.dropUser(#{@resource[:username].to_json})", @resource[:database])
   end
 
   def exists?
-    Puppet.debug("MONGODB_USER exists?")
     !(@property_hash[:ensure] == :absent || @property_hash[:ensure].nil?)
   end
 
   def password_hash=(_value)
-    Puppet.debug("MONGODB_USER password_hash with #{_value}")
     if db_ismaster
       command = {
         updateUser: @resource[:username],
@@ -131,7 +111,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def password=(value)
-    Puppet.debug("MONGODB_USER password= with #{value}")
     if mongo_26?
       mongo_eval("db.changeUserPassword(#{@resource[:username].to_json}, #{value.to_json})", @resource[:database])
     else
@@ -150,7 +129,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def roles=(roles)
-    Puppet.debug("MONGODB_USER roles with #{roles}")
     if db_ismaster
       grant = to_roles(roles, @resource[:database]) - to_roles(@property_hash[:roles], @resource[:database])
       mongo_eval("db.getSiblingDB(#{@resource[:database].to_json}).grantRolesToUser(#{@resource[:username].to_json}, #{role_hashes(grant, @resource[:database]).to_json})") unless grant.empty?
@@ -165,7 +143,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   private
 
   def self.from_roles(roles, db)
-    Puppet.debug("MONGODB_USER self.from_roles with #{roles} and db is #{db}")
     roles.map do |entry|
       if entry['db'].empty? || entry['db'] == db
         entry['role']
@@ -176,7 +153,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def to_roles(roles, db)
-    Puppet.debug("MONGODB_USER self.to_roles with #{roles} and db is #{db}")
     roles.map do |entry|
       if entry.include? '@'
         entry
@@ -187,7 +163,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def role_hashes(roles, db)
-    Puppet.debug("MONGODB_USER self.role_hashes with #{roles} and db is #{db}")
     roles.sort.map do |entry|
       if entry.include? '@'
         {

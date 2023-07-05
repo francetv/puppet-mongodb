@@ -31,17 +31,14 @@ Puppet::Type.type(:mongodb_database).provide(:mongodb, parent: Puppet::Provider:
   end
 
   def auth_enabled
-    Puppet.debug('MONGODB_DATABASE: in auth_enabled')
     self.class.auth_enabled
   end
 
   def create
     if db_ismaster
       begin
-        Puppet.debug("MONGODB_DATABASE: In create")
         out = mongo_eval('db.dummyData.insertOne({"created_by_puppet": 1})', @resource[:name])
       rescue StandardError => e
-        Puppet.debug("MONGODB_DATABSE: In create in rescue")
         if auth_enabled && e.message =~ %r{not authorized on admin to execute commanda} && @resource[:name] == 'admin'
           Puppet.warning 'Skipping database creation for admin, need admin user first when security is enabled'
           @property_hash[:ensure] = :present

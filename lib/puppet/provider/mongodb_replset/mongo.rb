@@ -18,23 +18,19 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   mk_resource_methods
 
   def initialize(resource = {})
-    Puppet.debug("REPLSET: initialise")
     super(resource)
     @property_flush = {}
   end
 
   def settings=(settings)
-    Puppet.debug("REPLSET: settings= with #{settings}")
     @property_flush[:settings] = settings
   end
 
   def members=(hosts)
-    Puppet.debug("REPLSET: members= with #{hosts}")
     @property_flush[:members] = hosts
   end
 
   def self.instances
-    Puppet.debug("REPLSET: instances")
     instance = replset_properties
     if instance
       # There can only be one replset per node
@@ -45,7 +41,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def self.prefetch(resources)
-    Puppet.debug("REPLSET: prefetch")
     instances.each do |prov|
       resource = resources[prov.name]
       resource.provider = prov if resource
@@ -53,24 +48,20 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def exists?
-    Puppet.debug("REPLSET: exists?")
     @property_hash[:ensure] == :present
   end
 
   def create
-    Puppet.debug("REPLSET: create")
     @property_flush[:ensure] = :present
     @property_flush[:members] = resource.should(:members)
     @property_flush[:settings] = resource.should(:settings)
   end
 
   def destroy
-    Puppet.debug("REPLSET: destroy")
     @property_flush[:ensure] = :absent
   end
 
   def flush
-    Puppet.debug("REPLSET: flush")
     set_members
     @property_hash = self.class.replset_properties
   end
@@ -78,12 +69,10 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   private
 
   def db_ismaster(host)
-    Puppet.debug("REPLSET: flush")
     mongo_command('db.isMaster()', host)
   end
 
   def rs_initiate(conf, master)
-    Puppet.debug("REPLSET: in rs_initiate with conf is #{conf} and master is #{master} and auth_enabled is #{auth_enabled}")
     if auth_enabled && auth_enabled != 'disabled'
       mongo_command("rs.initiate(#{conf})", initialize_host)
     else
@@ -92,58 +81,47 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def rs_status(host)
-    Puppet.debug("REPLSET: in rs_status with host is #{host}")
     mongo_command('rs.status()', host)
   end
 
   def rs_config(host)
-    Puppet.debug("REPLSET: in rs_config with host is #{host}")
     mongo_command('rs.config()', host)
   end
 
   def rs_add(host_conf, master)
-    Puppet.debug("REPLSET: in rs_add with host_conf is #{host_conf} and master is #{master}")
     mongo_command("rs.add(#{host_conf.to_json})", master)
   end
 
   def rs_remove(host_conf, master)
-    Puppet.debug("REPLSET: in rs_remove with host_conf is #{host_conf} and master is #{master}")
     host = host_conf['host']
     mongo_command("rs.remove('#{host}')", master)
   end
 
   def rs_reconfig_member(host_conf, master)
-    Puppet.debug("REPLSET: in rs_reconfig_member with host_conf is #{host_conf} and master is #{master}")
     mongo_command("rsReconfigMember(#{host_conf.to_json})", master)
   end
 
   def rs_reconfig_settings(settings, master)
-    Puppet.debug("REPLSET: in rs_reconfig_settings with settings is #{settings} and master is #{master}")
     mongo_command("rsReconfigSettings(#{settings.to_json})", master)
   end
 
   def rs_arbiter
-    Puppet.debug("REPLSET: rs_arbiter")
     @resource[:arbiter]
   end
 
   def rs_add_arbiter(host, master)
-    Puppet.debug("REPLSET: rs_add_arbiter")
     mongo_command("rs.addArb('#{host}')", master)
   end
 
   def auth_enabled
-    Puppet.debug('REPLSET: in auth_enabled')
     self.class.auth_enabled
   end
 
   def initialize_host
-    Puppet.debug("REPLSET: initialize_host")
     @resource[:initialize_host]
   end
 
   def master_host(members)
-    Puppet.debug("REPLSET: in master_host with members is #{members}")
     members.each do |member|
       status = db_ismaster(member['host'])
       return status['primary'] if status.key?('primary')
@@ -152,30 +130,24 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def self.replset_properties
-    Puppet.debug("REPLSET: self.replset_properties")
     conn_string = conn_string
     begin
       output = mongo_command('rs.conf()', conn_string)
     rescue Puppet::ExecutionFailure => e
-      Puppet.debug("REPLSET in self.replset_properties rescue with errors #{e.message}")
       if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command}
-        Puppet.debug("REPLSET in self.replset_properties rescue new try with rs.status()")
         output = mongo_command('rs.status()', conn_string)
-        Puppet.debug("REPLSET in self.replset_properties rescue new try #{output}")
         if output['members']
           memb = []
           output['members'].each do |m|
             memb << { 'host' => m['name'] }
           end
-          ret = {
+          {
             name: output['set'],
             ensure: :present,
             members: memb,
             #settings: @resource[:settings],
             provider: :mongo
           }
-          Puppet.debug("REPLSET in self.replset_properties rescue result is #{ret}")
-          return ret
         end
       else
         nil
@@ -194,13 +166,11 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def get_hosts_status(members)
-    Puppet.debug("REPLSET: get_hosts_status with #{members}")
     alive = []
     members.select do |member|
       host = member['host']
       Puppet.debug "Checking replicaset member #{host} ..."
       status = rs_status(host)
-      Puppet.debug("REPLSET: get_hosts_status with status #{status}")
       raise Puppet::Error, "Can't configure replicaset #{name}, host #{host} is not supposed to be part of a replicaset." if status.key?('errmsg') && status['errmsg'] == 'not running with --replSet'
 
       if auth_enabled && status.key?('errmsg') && (status['errmsg'].include?('requires authentication') || status['errmsg'].include?('not authorized on admin') || status['errmsg'].include?('Authentication failed'))
@@ -238,7 +208,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def get_members_changes(current_members_conf, new_members_conf)
-    Puppet.debug("REPLSET: get_ members_changes with #{current_members_conf} and #{new_members_conf}")
     # no changes in members config
     return [[], [], []] if new_members_conf.nil?
 
@@ -270,7 +239,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def get_replset_settings_changes(current_settings, new_settings)
-    Puppet.debug("REPLSET: get_replset_settings_change swith #{current_settings} and #{new_settings}")
     new_settings.each do |k, v|
       current_settings[k] = v
     end
@@ -278,8 +246,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def set_members
-    Puppet.debug("REPLSET: set_members")
-
     if @property_flush[:ensure] == :absent
       # TODO: I don't know how to remove a node from a replset; unimplemented
       # Puppet.debug "Removing all members from replset #{self.name}"
@@ -298,7 +264,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
     # authentication should be working.
     #
     Puppet.debug 'Checking for dead and alive members'
-    Puppet.debug("REPLSET: set_members @property_flush[:members] is #{@property_flush[:members]} and resource[:members] is #{resource[:members]}")
     if !@property_flush[:members].nil? && !@property_flush[:members].empty?
       # Find the alive members so we don't try to add dead members to the replset using new config
       alive_hosts, dead_hosts = get_hosts_status(@property_flush[:members])
@@ -448,11 +413,9 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def self.mongo_command(command, host = nil, retries = 4)
-    Puppet.debug("REPLSET: self.mongo_command #{command} and host #{host}")
     begin
       output = mongo_eval("EJSON.stringify(#{command})", 'admin', retries, host)
     rescue Puppet::ExecutionFailure => e
-      Puppet.debug("REPLSET: rescue self.mongo_command error #{e.message} and #{output}")
       if e.message =~ %r{no replset config has been received} || e.message =~ %r{Authentication failed}
         output = '{}'
       else
@@ -465,7 +428,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
     output = '{}' if output =~ %r{no replset config} || output =~ %r{Authentication failed}
     output = '{}' if output == "null\n"
     output = '{}' if output == "\nnull\n"
-    Puppet.debug("REPLSET: self.mongo_command result #{output}")
 
     # Parse the JSON output and return
     JSON.parse(output)

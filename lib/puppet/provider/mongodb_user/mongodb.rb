@@ -11,7 +11,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
     Puppet.debug("MONGODB_USER self.instances")
 
-    #if db_ismaster
+    if db_ismaster
       script = 'EJSON.stringify(db.system.users.find().toArray())'
       # A hack to prevent prefetching failures until admin user is created
       script = "try {#{script}} catch (e) { if (e.message.match(/requires authentication/) || e.message.match(/not authorized on admin/)) { 'not authorized on admin' } else {throw e}}" if auth_enabled
@@ -41,10 +41,10 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
             password_hash: user['credentials']['MONGODB-CR'],
             scram_credentials: user['credentials']['SCRAM-SHA-1'])
       end
-    #else
-    #  Puppet.warning 'User info is available only from master host'
-    #  []
-    #end
+    else
+      Puppet.warning 'User info is available only from master host'
+      []
+    end
   end
 
   # Assign prefetched users based on username and database, not on id and name

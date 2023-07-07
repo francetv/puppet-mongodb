@@ -8,6 +8,7 @@ Puppet::Type.newtype(:mongodb_replset) do
   @doc = 'Manage a MongoDB replicaSet'
 
   ensurable do
+    desc 'Ensure the replicaset is iether present or absent'
     defaultto :present
 
     newvalue(:present) do

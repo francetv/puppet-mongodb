@@ -9,7 +9,7 @@
 #  }
 #
 # @param config
-#  Path of the config file. If not specified, the module will use the default for your OS distro.
+#   Path of the config file. If not specified, the module will use the default for your OS distro.
 #
 # @param config_content
 #   Config content if the default doesn't match one needs.
@@ -52,7 +52,7 @@
 #
 # @param package_name
 #   This setting can be used to specify the name of the package that should be installed.
-#    If not specified, the module will use whatever service name is the default for your OS distro.
+#   If not specified, the module will use whatever service name is the default for your OS distro.
 #
 # @param unixsocketprefix
 #   The path for the UNIX socket. If this option has no value, the mongos process creates a socket with /tmp as a prefix.

@@ -1,4 +1,30 @@
-# PRIVATE CLASS: do not use directly
+# @summary Private clas to manage the mongodb repo
+#
+# @param ensure
+#   present or absent
+#
+# @param version
+#   the version of the mongodb repo
+#
+# @param use_enterprise_repo
+#   wether to use the OS or Enterprose repo
+#
+# @param repo_location
+#   Location of the upstream repository
+#
+# @param proxy
+#   Proxy hostnam
+#
+# @param proxy_useername
+#   Proxy user name
+#
+# @param proxy_password
+#   Proxy pasword
+#
+# @param aptkey_options
+#   options for debian aptkey
+
+# @api private
 class mongodb::repo (
   Variant[Enum['present', 'absent'], Boolean] $ensure = 'present',
   Optional[String] $version                           = undef,

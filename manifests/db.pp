@@ -1,16 +1,20 @@
-# == Class: mongodb::db
+# @summary Class for creating mongodb databases and users.
 #
-# Class for creating mongodb databases and users.
-#
-# == Parameters
-#
-#  user - Database username.
-#  auth_mechanism - Authentication mechanism. scram_sha_256 password verification is not supported. Defaults to 'scram_sha_1'.
-#  db_name - Database name. Defaults to $name.
-#  password_hash - Hashed password. Hex encoded md5 hash of "$username:mongo:$password".
-#  password - Plain text user password. This is UNSAFE, use 'password_hash' instead.
-#  roles (default: ['dbAdmin']) - array with user roles.
-#  tries (default: 10) - The maximum amount of two second tries to wait MongoDB startup.
+# @param user
+#   Database username.
+# @param
+#   auth_mechanism - Authentication mechanism. scram_sha_256 password verification is not supported. Defaults to 'scram_sha_1'.
+# @param
+#   db_name - Database name. Defaults to $name.
+# @param
+#   password_hash - Hashed password. Hex encoded md5 hash of "$username:mongo:$password".
+# @param
+#   password - Plain text user password. This is UNSAFE, use 'password_hash' instead.
+# @param
+#   roles (default: ['dbAdmin']) - array with user roles.
+# @param
+#   tries (default: 10) - The maximum amount of two second tries to wait MongoDB startup.
+# @param
 #  update_password (default: false) - Force an update of the password when scram_sha_256 is used.
 #
 define mongodb::db (

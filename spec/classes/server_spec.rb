@@ -47,11 +47,11 @@ describe 'mongodb::server' do
         it_behaves_like 'server classes'
 
         if facts[:os]['family'] == 'RedHat' || facts[:os]['family'] == 'Suse'
-          it { is_expected.to contain_package('mongodb_server').with_ensure('present').with_name('mongodb-org-server').with_tag('mongodb_package') }
+          it { is_expected.to contain_package('mongodb_server').with_ensure('6.0').with_name('mongodb-org-server').with_tag('mongodb_package') }
         elsif facts[:os]['release']['major'] =~ %r{(10)}
-          it { is_expected.to contain_package('mongodb_server').with_ensure('4.4.8').with_name('mongodb-org-server').with_tag('mongodb_package') }
+          it { is_expected.to contain_package('mongodb_server').with_ensure('6.0').with_name('mongodb-org-server').with_tag('mongodb_package') }
         else
-          it { is_expected.to contain_package('mongodb_server').with_ensure('present').with_name('mongodb-server').with_tag('mongodb_package') }
+          it { is_expected.to contain_package('mongodb_server').with_ensure('6.0').with_name('mongodb-server').with_tag('mongodb_package') }
         end
 
         it do
@@ -59,7 +59,7 @@ describe 'mongodb::server' do
             with_mode('0644').
             with_owner('root').
             with_group('root').
-            with_content(%r{^storage\.dbPath: /var/lib/mongodb$}).
+            with_content(%r{^storage\.dbPath: /var/lib/mongo$}).
             with_content(%r{^net\.bindIp:  127\.0\.0\.1$}).
             with_content(%r{^systemLog\.logAppend: true$}).
             with_content(%r{^systemLog\.path: #{log_path}$})
@@ -327,10 +327,10 @@ describe 'mongodb::server' do
 
         it do
           is_expected.to contain_exec('fix dbpath permissions').
-            with_command('chown -R foo:bar /var/lib/mongodb').
+            with_command('chown -R foo:bar /var/lib/mongo').
             with_path(['/usr/bin', '/bin']).
-            with_onlyif("find /var/lib/mongodb -not -user foo -o -not -group bar -print -quit | grep -q '.*'").
-            that_subscribes_to('File[/var/lib/mongodb]')
+            with_onlyif("find /var/lib/mongo -not -user foo -o -not -group bar -print -quit | grep -q '.*'").
+            that_subscribes_to('File[/var/lib/mongo]')
         end
       end
 

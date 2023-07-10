@@ -133,6 +133,16 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
     conn_string = conn_string
     begin
       output = mongo_command('rs.conf()', conn_string)
+      if output['members']
+        return {
+          name: output['_id'], # replica set name
+          ensure: :present,
+          members: output['members'],
+          settings: output['settings'],
+          provider: :mongo
+        }
+      end
+      nil
     rescue Puppet::ExecutionFailure => e
       if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command}
         output = mongo_command('rs.status()', conn_string)
@@ -141,28 +151,16 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
           output['members'].each do |m|
             memb << { 'host' => m['name'] }
           end
-          {
+          return {
             name: output['set'],
             ensure: :present,
             members: memb,
-            #settings: @resource[:settings],
             provider: :mongo
           }
         end
-      else
         nil
       end
     end
-    if output['members']
-      return {
-        name: output['_id'], # replica set name
-        ensure: :present,
-        members: output['members'],
-        settings: output['settings'],
-        provider: :mongo
-      }
-    end
-    nil
   end
 
   def get_hosts_status(members)
@@ -255,7 +253,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       return
     end
 
-    #Puppet.debug("REPLICASET DEBUG BIG Is replicaset initiated ? #{rs_initiated?}")
     # When no replicaset is initiated yet, and authenticatoin is anabled,
     # mongo_eval still adds the mongorcsh.js.  This gives an 'MongoServerError: Authentication failed.' error.
     # In this stage, we only can connect to localhost, and only rs.status() and rs.initiate() is possible.

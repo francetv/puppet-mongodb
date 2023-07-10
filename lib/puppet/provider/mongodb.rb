@@ -101,8 +101,7 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     end
 
     args += ['--eval', cmd]
-    out = mongosh(args)
-    out
+    mongosh(args)
   end
 
   def self.conn_string
@@ -141,17 +140,10 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     cmd_ismaster = mongoshrc_file + cmd_ismaster if mongoshrc_file
     db = 'admin'
 
-    full_command = if mongoshrc_file
-                     mongoshrc_file + cmd_ismaster
-                   else
-                     cmd_ismaster
-                   end
     begin
-       res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
+      res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
     rescue StandardError => e
-      if self.auth_enabled && e.message =~ %r{Authentication failed}
-        res = mongosh_cmd(db, conn_string, 'db.isMaster().ismaster').to_s.chomp
-      end
+      res = mongosh_cmd(db, conn_string, 'db.isMaster().ismaster').to_s.chomp if auth_enabled && e.message =~ %r{Authentication failed}
     end
 
     res.eql?('true')
@@ -167,21 +159,16 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   end
 
   def self.rs_initiated?
+    # TODO: not used yet, generates a stack level to deep error
     cmd_status = "rs.status('localhost').set"
     cmd_status = mongoshrc_file + cmd_status if mongoshrc_file
     db = 'admin'
-    res = mongosh_cmd(db, conn_string, cmd_ismaster).to_s.split(%r{\n}).last.chomp
+    res = mongosh_cmd(db, conn_string, cmd_status).to_s.split(%r{\n}).last.chomp
 
     # Retry command without authentication when mongorc_file is set and authentication failed
-    if mongorc_file && res =~ %r{Authentication failed}
-      res = mongosh_cmd(db, conn_string, "rs.status('localhost').set").to_s.chomp
-    end
+    res = mongosh_cmd(db, conn_string, "rs.status('localhost').set").to_s.chomp if mongorc_file && res =~ %r{Authentication failed}
 
     res == @resource[:name]
-  end
-
-  def rs_initiated?
-    self.rs_initiated?
   end
 
   # Mongo Command Wrapper
@@ -201,7 +188,7 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     rescue StandardError => e
       # When using the rc file, we get this eror because in most cases the admin user is not created yet
       # Can/must we move this out of the resue block ?
-      if self.auth_enabled && e.message =~ %r{Authentication failed}
+      if auth_enabled && e.message =~ %r{Authentication failed}
         out = if host
                 mongosh_cmd(db, host, no_auth_cmd)
               else

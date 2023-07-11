@@ -56,7 +56,7 @@ describe 'mongodb::mongos class' do
       it { is_expected.to be_listening }
     end
 
-    describe command('mongo --version') do
+    describe command('mongod --version') do
       its(:exit_status) { is_expected.to eq 0 }
     end
   end

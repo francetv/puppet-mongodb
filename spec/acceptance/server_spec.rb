@@ -30,7 +30,6 @@ describe 'mongodb::server class' do
     it 'works with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': }
-        -> class { 'mongodb::client': }
       EOS
 
       apply_manifest(pp, catch_failures: true)
@@ -65,7 +64,6 @@ describe 'mongodb::server class' do
         class { 'mongodb::server':
           port => 27018,
         }
-        -> class { 'mongodb::client': }
       EOS
 
       apply_manifest(pp, catch_failures: true)
@@ -107,7 +105,6 @@ describe 'mongodb::server class' do
           restart        => true,
           set_parameter  => ['enableLocalhostAuthBypass: true']
         }
-        class { 'mongodb::client': }
 
         mongodb_user { "User admin on db admin":
           ensure        => present,
@@ -170,7 +167,6 @@ describe 'mongodb::server class' do
              service_ensure => stopped,
              service_enable => false
            }
-        -> class { 'mongodb::client': ensure => absent, }
       EOS
       apply_manifest(pp, catch_failures: true)
       apply_manifest(pp, catch_changes: true)

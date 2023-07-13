@@ -15,9 +15,6 @@ if hosts.length > 1
         mongodb_replset { 'foo' :
           members => ["shard:27018"],
         }
-        if $::osfamily == 'RedHat' {
-          class { 'mongodb::client': }
-        }
       EOS
 
       apply_manifest_on(hosts_as('shard'), pp, catch_failures: true)
@@ -39,9 +36,6 @@ if hosts.length > 1
         mongodb_shard { 'foo':
           member => 'foo/shard:27018',
           keys   => [{'foo.toto' => {'name' => 1}}]
-        }
-        if $::osfamily == 'RedHat' {
-          class { 'mongodb::client': }
         }
       EOS
 

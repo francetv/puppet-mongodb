@@ -8,7 +8,6 @@ describe 'mongodb_database' do
       it 'compiles with no errors' do
         pp = <<-EOS
           class { 'mongodb::server': }
-          -> class { 'mongodb::client': }
           -> mongodb::db { 'testdb1':
             user     => 'testuser',
             password => 'testpass',
@@ -24,7 +23,7 @@ describe 'mongodb_database' do
 
       it 'creates the databases' do
         shell("mongosh testdb1 --eval 'EJSON.stringify(db.getMongo().getDBs())'")
-        shell("mongsho testdb2 --eval 'EJSON.stringify(db.getMongo().getDBs())'")
+        shell("mongosh testdb2 --eval 'EJSON.stringify(db.getMongo().getDBs())'")
       end
     end
 
@@ -34,7 +33,6 @@ describe 'mongodb_database' do
           class { 'mongodb::server':
             port => 27018,
           }
-          -> class { 'mongodb::client': }
           -> mongodb::db { 'testdb1':
             user     => 'testuser',
             password => 'testpass',

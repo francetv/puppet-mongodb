@@ -7,7 +7,6 @@ describe 'mongodb_database' do
     it 'compiles with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': }
-        -> class { 'mongodb::client': }
         -> mongodb_database { 'testdb': ensure => present }
         ->
         mongodb_user {'testuser':
@@ -30,7 +29,6 @@ describe 'mongodb_database' do
     it 'removes a user with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': }
-        -> class { 'mongodb::client': }
         -> mongodb_database { 'testdb': ensure => present }
         ->
         mongodb_user {'testuser':
@@ -55,7 +53,6 @@ describe 'mongodb_database' do
     it 'works with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': port => 27018 }
-        -> class { 'mongodb::client': }
         -> mongodb_database { 'testdb': ensure => present }
         ->
         mongodb_user {'testuser':
@@ -80,7 +77,6 @@ describe 'mongodb_database' do
     it 'compiles with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': }
-        -> class { 'mongodb::client': }
         -> mongodb_database { 'testdb': ensure => present }
         ->
         mongodb_user {'testuser':
@@ -106,7 +102,6 @@ describe 'mongodb_database' do
     it 'compiles with no errors' do
       pp = <<-EOS
         class { 'mongodb::server': }
-        -> class { 'mongodb::client': }
         -> mongodb_database { 'testdb': ensure => present }
         -> mongodb_database { 'testdb2': ensure => present }
         ->

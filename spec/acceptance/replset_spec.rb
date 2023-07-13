@@ -15,11 +15,6 @@ if hosts.length > 1
           package_ensure => absent,
           service_ensure => stopped
         }
-        if $::osfamily == 'RedHat' {
-          class { 'mongodb::client':
-            ensure => absent
-          }
-        }
       EOS
 
       apply_manifest_on(hosts.reverse, pp, catch_failures: true)
@@ -31,9 +26,6 @@ if hosts.length > 1
         -> class { 'mongodb::server':
           bind_ip => '0.0.0.0',
           replset => 'test',
-        }
-        if $::osfamily == 'RedHat' {
-          class { 'mongodb::client': }
         }
       EOS
 
@@ -85,11 +77,6 @@ if hosts.length > 1
           package_ensure => absent,
           service_ensure => stopped
         }
-        if $::osfamily == 'RedHat' {
-          class { 'mongodb::client':
-            ensure => absent
-          }
-        }
       EOS
 
       apply_manifest_on(hosts.reverse, pp, catch_failures: true)
@@ -125,9 +112,6 @@ if hosts.length > 1
         nc1ohyB0lNt8lHf1U00mtgDSV3fwo5LkwhRi6d+bDBTL/C6MZETMLdyCqDlTdUWG
         YXIsJ0gYcu9XG3mx10LbdPJvxSMg'
 
-                }
-                if $::osfamily == 'RedHat' {
-                  include mongodb::client
                 }
       EOS
 
@@ -165,9 +149,6 @@ if hosts.length > 1
         YG/QX0BmltAni8owgymFuyJgvr/gaRX4WHbKFD+9nKpqJ3ocuVNuCDsxDqLsJEME
         nc1ohyB0lNt8lHf1U00mtgDSV3fwo5LkwhRi6d+bDBTL/C6MZETMLdyCqDlTdUWG
         YXIsJ0gYcu9XG3mx10LbdPJvxSMg'
-                }
-                if $::osfamily == 'RedHat' {
-                  include mongodb::client
                 }
                 mongodb_replset { 'test':
                   auth_enabled => true,

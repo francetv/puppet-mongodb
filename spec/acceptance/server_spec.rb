@@ -150,7 +150,7 @@ describe 'mongodb::server class' do
 
     describe command("mongosh admin --quiet --eval \"load('/root/.mongoshrc.js');EJSON.stringify(db.getUser('admin')['customData'])\"") do
       its(:exit_status) { is_expected.to eq 0 }
-      its(:stdout) { is_expected.to match "{ \"createdBy\" : \"Puppet Mongodb_user['User admin on db admin']\" }\n" }
+      its(:stdout) { is_expected.to match "{\"createdBy\":\"Puppet Mongodb_user['User admin on db admin']\"}\n" }
     end
 
     describe command('mongod --version') do

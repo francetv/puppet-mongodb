@@ -22,7 +22,7 @@ describe 'mongodb_database' do
 
     it 'creates the user' do
       shell("mongosh testdb --quiet --eval 'db.auth(\"testuser\",\"passw0rd\")'") do |r|
-        expect(r.stdout.chomp).to eq('1')
+        expect(r.stdout.chomp).to eq('{ ok: 1 }')
       end
     end
 
@@ -68,7 +68,7 @@ describe 'mongodb_database' do
 
     it 'creates the user' do
       shell("mongosh testdb --quiet --port 27018 --eval 'db.auth(\"testuser\",\"passw0rd\")'") do |r|
-        expect(r.stdout.chomp).to eq('1')
+        expect(r.stdout.chomp).to eq('{ ok: 1 }')
       end
     end
   end
@@ -93,7 +93,7 @@ describe 'mongodb_database' do
 
     it 'creates the user' do
       shell("mongosh testdb --quiet --eval 'db.auth(\"testuser\",\"passw0rd\")'") do |r|
-        expect(r.stdout.chomp).to eq('1')
+        expect(r.stdout.chomp).to eq('{ ok: 1 }')
       end
     end
   end
@@ -126,7 +126,7 @@ describe 'mongodb_database' do
 
     it 'allows the testuser' do
       shell("mongosh testdb --quiet --eval 'db.auth(\"testuser\",\"passw0rd\")'") do |r|
-        expect(r.stdout.chomp).to eq('1')
+        expect(r.stdout.chomp).to eq('{ ok: 1 }')
       end
     end
 
@@ -138,7 +138,7 @@ describe 'mongodb_database' do
 
     it 'allows the second user to connect to its default database' do
       shell("mongosh testdb2 --quiet --eval 'db.auth(\"testuser2\",\"passw0rd\")'") do |r|
-        expect(r.stdout.chomp).to eq('1')
+        expect(r.stdout.chomp).to eq('{ ok: 1 }')
       end
     end
 

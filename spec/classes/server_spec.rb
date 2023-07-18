@@ -59,11 +59,7 @@ describe 'mongodb::server' do
             with_content(%r{^systemLog\.path: #{log_path}$})
         end
 
-        if facts[:os]['family'] == 'Debian'
-          it { is_expected.not_to contain_file(config_file).with_content(%r{fork}) }
-        else
-          it { is_expected.to contain_file(config_file).with_content(%r{^  fork: true$}) }
-        end
+        it { is_expected.not_to contain_file(config_file).with_content(%r{fork}) }
 
         it { is_expected.to contain_file('/root/.mongoshrc.js').with_ensure('file').without_content(%r{db\.auth}) }
         it { is_expected.not_to contain_exec('fix dbpath permissions') }

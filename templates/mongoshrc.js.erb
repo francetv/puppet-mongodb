@@ -30,10 +30,21 @@ function authRequired() {
 }
 
 if (authRequired()) {
-  <%- if @admin_auth_mechanism != 'x509' -%>
-    <%- if @replset -%>
+  <%- if @replset -%>
   db.getMongo().setReadPref('primaryPreferred')
-    <%- end -%>
+    <%- if @admin_auth_mechanism == 'x509' -%>
+  try {
+    db.getSiblingDB('$external').auth(
+      {
+        mechanism: 'MONGODB-X509'
+      }
+    )
+  }
+  catch(err) {  
+    // This isn't catching authentication errors as I'd expect...
+    throw(err)
+  }
+    <%- else -%>
   try {
     var prev_db = db.getName()
     db = db.getSiblingDB('admin')
@@ -44,6 +55,7 @@ if (authRequired()) {
     // This isn't catching authentication errors as I'd expect...
     throw(err)
   }
+    <%- end -%>
   <%- end -%>
 }
 <% end -%>

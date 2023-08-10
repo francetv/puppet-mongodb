@@ -115,21 +115,17 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
   end
 
   def password=(value)
-    if mongo_26?
-      mongo_eval("db.changeUserPassword(#{@resource[:username].to_json}, #{value.to_json})", @resource[:database])
-    else
-      command = {
-        updateUser: @resource[:username],
-        pwd: @resource[:password],
-        digestPassword: true
-      }
+    command = {
+      updateUser: @resource[:username],
+      pwd: @resource[:password],
+      digestPassword: true
+    }
 
-      if mongo_4? || mongo_5? || mongo_6?
-        command[:mechanisms] = @resource[:auth_mechanism] == :scram_sha_256 ? ['SCRAM-SHA-256'] : ['SCRAM-SHA-1']
-      end
-
-      mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
+    if mongo_4? || mongo_5? || mongo_6?
+      command[:mechanisms] = @resource[:auth_mechanism] == :scram_sha_256 ? ['SCRAM-SHA-256'] : ['SCRAM-SHA-1']
     end
+
+    mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
   end
 
   def roles=(roles)

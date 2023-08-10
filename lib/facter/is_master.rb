@@ -2,7 +2,6 @@
 
 require 'json'
 require 'yaml'
-require 'pry'
 
 def mongod_conf_file
   locations = ['/etc/mongod.conf', '/etc/mongodb.conf']

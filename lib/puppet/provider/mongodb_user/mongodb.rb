@@ -22,11 +22,17 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
       Puppet.debug("XXXXXXXX In self.instances, retrieved users: #{users}")
 
       users.map do |user|
+        db = if user['db'] == '$external'
+               # For external users, we need to retreive the original DB name from here.
+               user['customData']['createdBy'][/.*on db (.*)'\]$/,1]
+             else
+               user['db']
+             end
         new(name: user['_id'],
             ensure: :present,
             username: user['user'],
-            database: user['db'],
-            roles: from_roles(user['roles'], user['db']),
+            database: db,
+            roles: from_roles(user['roles'], db),
             password_hash: user['credentials']['MONGODB-CR'],
             scram_credentials: user['credentials']['SCRAM-SHA-1'])
       end

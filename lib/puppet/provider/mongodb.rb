@@ -233,5 +233,4 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   def mongo_version
     self.class.mongo_version
   end
-
 end

@@ -144,7 +144,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       end
       nil
     rescue Puppet::ExecutionFailure => e
-      #if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command} || e.message =~ %r{no replset config has been received}
       if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command}
         output = mongo_command('rs.status()', conn_string)
         if output['members']
@@ -188,9 +187,9 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
           case e.message
           when %r{no replset config has been received}
             Puppet.warning('No replicaset config received, needs initialisation')
-          when /Authentication failed/, /not authorized on admin/, /Authentication failed/
+          when %r{Authentication failed}, %r{not authorized on admin}
             Puppet.warning "Host #{host} is available, but you are unauthorized because of authentication is enabled: #{auth_enabled}"
-          when /command replSetGetStatus requires authentication/
+          when %r{command replSetGetStatus requires authentication}
             Puppet.warning("Node #{host} is reachable but requires authentication: ReplicaSet not initialized")
           end
           alive.push(member)
@@ -410,11 +409,9 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
   def self.mongo_command(command, host = nil, retries = 4)
     output = mongo_eval("EJSON.stringify(#{command})", 'admin', retries, host)
-    if output =~ %r{no replset config has been received} || output =~ %r{Authentication failed}
-      output = '{}'
-    end
 
     # Hack to avoid non-json empty sets
+    output = '{}' if output =~ %r{no replset config has been received} || output =~ %r{Authentication failed}
     output = '{}' if output == "null\n"
     output = '{}' if output == "\nnull\n"
 

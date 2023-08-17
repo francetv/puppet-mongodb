@@ -22,7 +22,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
       users.map do |user|
         db = if user['db'] == '$external'
                # For external users, we need to retreive the original DB name from here.
-               user['customData']['createdBy'][/.*on db (.*)'\]$/,1]
+               user['customData']['createdBy'][%r{.*on db (.*)'\]$}, 1]
              else
                user['db']
              end
@@ -120,7 +120,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
     end
   end
 
-  def password=(value)
+  def password=(_value)
     command = {
       updateUser: @resource[:username],
       pwd: @resource[:password],

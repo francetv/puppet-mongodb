@@ -19,8 +19,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
       users = JSON.parse out
 
-      Puppet.debug("XXXXXXXX In self.instances, retrieved users: #{users}")
-
       users.map do |user|
         db = if user['db'] == '$external'
                # For external users, we need to retreive the original DB name from here.
@@ -44,7 +42,6 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
   # Assign prefetched users based on username and database, not on id and name
   def self.prefetch(resources)
-    Puppet.debug("XXXXXXXXXXX in prefetch:  got following instances: #{instances}")
     users = instances
     resources.each do |name, resource|
       provider = users.find { |user| user.username == resource[:username] && user.database == resource[:database] }
@@ -84,10 +81,8 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
       end
 
       if @resource[:auth_mechanism] == :x509
-        Puppet.debug("XXXXXXXXXX about to create X509 user with command: #{command}")
         mongo_eval("db.getSiblingDB(\"$external\").runCommand(#{command.to_json})", @resource[:database])
       else
-        Puppet.debug("XXXXXXXXXX about to create regular user with command: #{command}")
         mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
       end
     else

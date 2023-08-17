@@ -131,7 +131,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
   def self.replset_properties
     conn_string = conn_string
-    conn_string = conn_string # rubocop:disable Lint/SelfAssignment
     begin
       output = mongo_command('rs.conf()', conn_string)
       if output['members']
@@ -147,7 +146,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
     rescue Puppet::ExecutionFailure => e
       #if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command} || e.message =~ %r{no replset config has been received}
       if e.message =~ %r{command replSetGetConfig requires authentication} || e.message =~ %r{not authorized on admin to execute command}
-        Puppet.debug('XXXXXXXXX in replset_properties rescue part')
         output = mongo_command('rs.status()', conn_string)
         if output['members']
           memb = []
@@ -173,20 +171,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       Puppet.debug "Checking replicaset member #{host} ..."
       begin
         status = rs_status(host)
-        Puppet.debug('XXXXXXXXXXXXXX should not get here since I dont have a replicaset')
         raise Puppet::Error, "Can't configure replicaset #{name}, host #{host} is not supposed to be part of a replicaset." if status.key?('errmsg') && status['errmsg'] == 'not running with --replSet'
-
-#      if auth_enabled && status.key?('errmsg')
-#        Puppet.debug "In auth_enabled && status.key?('errmsg')"
-#        if status['errmsg'].include?('requires authentication') || status['errmsg'].include?('not authorized on admin') || status['errmsg'].include?('Authentication failed')
-#          Puppet.debug "In auth_enabled && status.key?('errmsg') need authentication"
-#          Puppet.warning "Host #{host} is available, but you are unauthorized because of authentication is enabled: #{auth_enabled}"
-#          alive.push(member)
-#        elsif status['errmsg'].include?('no replset config has been received')
-#          Puppet.debug 'Mongo rs.status() RS not initialized output'
-#          alive.push(member)
-#        end
-#      end
 
         if status.key?('set')
           raise Puppet::Error, "Can't configure replicaset #{name}, host #{host} is already part of another replicaset." if status['set'] != name
@@ -199,7 +184,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
           alive.push(member)
         end
       rescue Puppet::ExecutionFailure => e
-        Puppet.debug('XXXXXXXXXXXX in rescue checking connection mebers')
         if auth_enabled
           case e.message
           when %r{no replset config has been received}
@@ -425,17 +409,10 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   end
 
   def self.mongo_command(command, host = nil, retries = 4)
-    #begin
-      output = mongo_eval("EJSON.stringify(#{command})", 'admin', retries, host)
-    #rescue Puppet::ExecutionFailure => e
-      #if e.message =~ %r{no replset config has been received} || e.message =~ %r{Authentication failed}
-      if output =~ %r{no replset config has been received} || output =~ %r{Authentication failed}
-        output = '{}'
-     # else
-     #   Puppet.debug "Got an exception: #{e}"
-     #   raise
-      end
-    #end
+    output = mongo_eval("EJSON.stringify(#{command})", 'admin', retries, host)
+    if output =~ %r{no replset config has been received} || output =~ %r{Authentication failed}
+      output = '{}'
+    end
 
     # Hack to avoid non-json empty sets
     output = '{}' if output == "null\n"

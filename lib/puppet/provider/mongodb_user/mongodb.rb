@@ -19,6 +19,8 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
       users = JSON.parse out
 
+      Puppet.debug("XXXXXXXX In self.instances, retrieved users: #{users}")
+
       users.map do |user|
         new(name: user['_id'],
             ensure: :present,
@@ -36,6 +38,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
 
   # Assign prefetched users based on username and database, not on id and name
   def self.prefetch(resources)
+    Puppet.debug("XXXXXXXXXXX in prefetch:  got following instances: #{instances}")
     users = instances
     resources.each do |name, resource|
       provider = users.find { |user| user.username == resource[:username] && user.database == resource[:database] }
@@ -58,30 +61,27 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
         roles: role_hashes(@resource[:roles], @resource[:database]),
       }
 
-      # is this still needed / we only support verion 4 and higher
-      if mongo_4? || mongo_5? || mongo_6?
-        case @resource[:auth_mechanism]
-        when :scram_sha_256 # rubocop:disable Naming/VariableNumber
-          command[:mechanisms] = ['SCRAM-SHA-256']
-          command[:pwd] = @resource[:password]
-          command[:digestPassword] = true
-        when :scram_sha_1 # rubocop:disable Naming/VariableNumber
-          command[:mechanisms] = ['SCRAM-SHA-1']
-          command[:pwd] = password_hash
-          command[:digestPassword] = false
-        when :x509
-          command[:mechanisms] = ['MONGODB-X509']
-        else
-          command[:pwd] = password_hash
-          command[:digestPassword] = false
-
-        end
+      case @resource[:auth_mechanism]
+      when :scram_sha_256 # rubocop:disable Naming/VariableNumber
+        command[:mechanisms] = ['SCRAM-SHA-256']
+        command[:pwd] = @resource[:password]
+        command[:digestPassword] = true
+      when :scram_sha_1 # rubocop:disable Naming/VariableNumber
+        command[:mechanisms] = ['SCRAM-SHA-1']
+        command[:pwd] = password_hash
+        command[:digestPassword] = false
+      when :x509
+        command[:mechanisms] = ['MONGODB-X509']
+      else
+        command[:pwd] = password_hash
+        command[:digestPassword] = false
       end
 
-      Puppet.debug("XXXXXXXXXX about to create user with command: #{command}")
       if @resource[:auth_mechanism] == :x509
-        mongo_eval("db.getSiblingDB(\"$external\").runCommand(#{command.to_json}}", @resource[:database])
+        Puppet.debug("XXXXXXXXXX about to create X509 user with command: #{command}")
+        mongo_eval("db.getSiblingDB(\"$external\").runCommand(#{command.to_json})", @resource[:database])
       else
+        Puppet.debug("XXXXXXXXXX about to create regular user with command: #{command}")
         mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
       end
     else

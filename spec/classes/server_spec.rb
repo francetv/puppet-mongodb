@@ -43,6 +43,22 @@ describe 'mongodb::server' do
         end
       end
 
+      let(:mongo_user) do
+        if facts[:os]['family'] == 'Debian'
+          'mongodb'
+        else
+          'mongod'
+        end
+      end
+
+      let(:mongo_group) do
+        if facts[:os]['family'] == 'Debian'
+          'mongodb'
+        else
+          'mongod'
+        end
+      end
+
       describe 'with defaults' do
         it_behaves_like 'server classes'
 
@@ -62,6 +78,8 @@ describe 'mongodb::server' do
         it { is_expected.not_to contain_file(config_file).with_content(%r{fork}) }
 
         it { is_expected.to contain_file('/root/.mongoshrc.js').with_ensure('file').without_content(%r{db\.auth}) }
+        it { is_expected.to contain_file('/var/lib/mongo').with(ensure: 'directory', mode: '0750', owner: mongo_user, group: mongo_group) }
+
         it { is_expected.not_to contain_exec('fix dbpath permissions') }
       end
 
@@ -264,7 +282,7 @@ describe 'mongodb::server' do
       end
 
       describe 'with store_creds' do
-        context 'true' do
+        context 'true with scram_sha_1' do
           let :params do
             {
               admin_username: 'admin',
@@ -281,6 +299,60 @@ describe 'mongodb::server' do
               with_group('root').
               with_mode('0600').
               with_content(%r{db\.auth\('admin', 'password'\)})
+          }
+        end
+
+        context 'true with scram_sha_256' do
+          let :params do
+            {
+              admin_username: 'admin',
+              admin_password: 'password',
+              admin_auth_mechanism: 'scram_sha_256',
+              admin_update_password: true,
+              auth: true,
+              store_creds: true
+            }
+          end
+
+          it {
+            is_expected.to contain_file('/root/.mongoshrc.js').
+              with_ensure('file').
+              with_owner('root').
+              with_group('root').
+              with_mode('0600').
+              with_content(%r{db\.auth\('admin', 'password'\)})
+          }
+        end
+
+        context 'true with x509' do
+          let :params do
+            {
+              admin_username: 'subject=CN=admin,OU=some,O=company,ST=somewhere,C=EX',
+              admin_auth_mechanism: 'x509',
+              admin_tls_key: '/path/to/key',
+              auth: true,
+              store_creds: true
+            }
+          end
+
+          it {
+            is_expected.to contain_file('/root/.mongoshrc.js').
+              with_ensure('file').
+              with_owner('root').
+              with_group('root').
+              with_mode('0600').
+              with_content(%r{db\.getSiblingDB\('\$external'\)\.auth}).
+              with_content(%r{mechanism: 'MONGODB-X509'})
+          }
+
+          it {
+            is_expected.to contain_file('/root/.mongosh.yaml').
+              with_ensure('file').
+              with_owner('root').
+              with_group('root').
+              with_mode('0600').
+              with_content(%r{^subject=CN=admin,OU=some,O=company,ST=somewhere,C=EX:$}).
+              with_content(%r{tlsCertificateKeyFile: /path/to/key})
           }
         end
 

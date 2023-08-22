@@ -129,16 +129,18 @@ class mongodb::server::config {
     }
 
     # TODO: we kind of use this file to force x509 autehntication in the providers when it exsists
-    #       Open for suugestions how to deal with this
-    if $admin_auth_mechanism == 'x509' {
-      $_ensure = 'present'
+    #       Open for suggestions how to deal with this
+    if $admin_auth_mechanism == 'x509' and $handle_creds {
+      $_ensure = 'file'
     } else {
       $_ensure = 'absent'
     }
 
     file { '/root/.mongosh.yaml':
       ensure  => $_ensure,
-      mode    => '0400',
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
       content => "---\n${admin_username}:\n  tlsCertificateKeyFile: ${admin_tls_key}",
     }
 

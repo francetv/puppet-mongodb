@@ -86,6 +86,16 @@ describe 'mongodb::repo' do
           it { is_expected.to raise_error(Puppet::Error, %r{not supported}) }
         end
       end
+
+      describe 'with older version' do
+        let :params do
+          {
+            version: '3.0.2'
+          }
+        end
+
+        it { is_expected.to raise_error(Puppet::Error, %r{older than 4.4 are unsupported}) }
+      end
     end
   end
 end

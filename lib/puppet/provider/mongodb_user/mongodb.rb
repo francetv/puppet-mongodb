@@ -20,6 +20,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
       users = JSON.parse out
 
       users.map do |user|
+        Puppet.debug("Fetching user  #{user}")
         db = if user['db'] == '$external'
                # For external users, we need to retreive the original DB name from here.
                user['customData']['createdBy'][%r{.*on db (.*)'\]$}, 1]
@@ -81,8 +82,10 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
       end
 
       if @resource[:auth_mechanism] == :x509
+        Puppet.debug("Creating user for x509 with command #{command}")
         mongo_eval("db.getSiblingDB(\"$external\").runCommand(#{command.to_json})", @resource[:database])
       else
+        Puppet.debug("Creating user for with command #{command}")
         mongo_eval("db.runCommand(#{command.to_json})", @resource[:database])
       end
     else

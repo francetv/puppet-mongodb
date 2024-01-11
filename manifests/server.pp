@@ -413,6 +413,7 @@ class mongodb::server (
   Boolean $create_admin                                              = $mongodb::params::create_admin,
   String $admin_username                                             = $mongodb::params::admin_username,
   Optional[Variant[String, Sensitive[String]]] $admin_password       = undef,
+  Optional[Variant[String[1], Sensitive[String[1]]]] $admin_password_hash = undef,
   Enum['scram_sha_1', 'scram_sha_256', 'x509'] $admin_auth_mechanism = $mongodb::params::admin_auth_mechanism,
   Optional[Stdlib::Absolutepath] $admin_tls_key                      = undef,
   Boolean $admin_update_password                                     = false,

@@ -17,7 +17,7 @@ def get_options_from_hash_config(config)
   if mongosh_conf_file
     mongosh_config = YAML.load_file(mongosh_conf_file)
     # check which tlscert we need to use
-    tlscert = if config['setParameter'] && config['setParameter']['authenticationMechanisms'].include? 'MONGODB-X509' && mongosh_config['admin'] && mongosh_config['admin']['tlsCertificateKeyFile']
+    tlscert = if config['setParameter'] && config['setParameter']['authenticationMechanisms'].include?('MONGODB-X509') && mongosh_config['admin'] && mongosh_config['admin']['tlsCertificateKeyFile']
                 mongosh_config['admin']['tlsCertificateKeyFile']
               end
   else
